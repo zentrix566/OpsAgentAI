@@ -1,0 +1,21 @@
+name: Mock Failure Project
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@4
+
+      - name: Simulate Java Build
+        run: |
+          echo "Starting Maven Build..."
+          echo "[ERROR] Failed to execute goal on project demo: Could not resolve dependencies"
+          # 关键点：执行一个不存在的命令，或者强制退出并返回非零状态码
+          exit 1
+
+      - name: This step will never run
+        run: echo "Done"
