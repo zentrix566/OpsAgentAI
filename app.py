@@ -5,10 +5,6 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 # ================= 环境变量获取 =================
-# 建议在 Linux 环境中执行: 
-# export GITHUB_TOKEN="你的Token"
-# export DIFY_API_KEY="你的Key"
-# export NOTIFY_WEBHOOK="你的钉钉地址"
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 DIFY_API_KEY = os.getenv("DIFY_API_KEY")
@@ -114,8 +110,6 @@ def push_notification(repo_name, diagnosis, job_url):
         print(f"飞书推送状态: {res.status_code}, 响应: {res.text}")
     except Exception as e:
         print(f"推送飞书时发生异常: {str(e)}")
-
-
 
 @app.route('/webhook', methods=['POST'])
 def github_webhook():
