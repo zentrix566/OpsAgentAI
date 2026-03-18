@@ -54,12 +54,12 @@ def ask_dify_ai(error_log, repo_name):
     }
     try:
         res = requests.post(DIFY_URL, json=payload, headers=headers, timeout=30)
-        print(f"Dify 状态码: {res.status_code}") # 添加这一行
-        print(f"Dify 响应内容: {res.text}")      # 添加这一行
+        print(f"Dify 状态码: {res.status_code}") 
+        print(f"Dify 响应内容: {res.text}")     
         res_data = res.json()
         return res_data.get('data', {}).get('outputs', {}).get('text', "AI 未返回有效诊断信息")
     except Exception as e:
-        print(f"请求 Dify 异常: {str(e)}")        # 添加这一行
+        print(f"请求 Dify 异常: {str(e)}")      
         return f"Dify 接口调用失败: {str(e)}"
 
 def push_notification(repo_name, diagnosis, job_url):
