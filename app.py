@@ -19,8 +19,7 @@ if not all([GITHUB_TOKEN, DIFY_API_KEY, NOTIFY_WEBHOOK]):
     print("❌ 错误: 请确保环境变量 GITHUB_TOKEN, DIFY_API_KEY, NOTIFY_WEBHOOK 已设置！")
 
 # Dify 默认接口地址（如果是私有部署，请修改此项或同样改为环境变量获取）
-DIFY_URL = os.getenv("DIFY_URL", "https://api.dify.ai/v1/workflow/run")
-
+DIFY_URL = os.getenv("DIFY_URL", "https://api.dify.ai/v1/workflows/run")
 # ================= 核心逻辑 =================
 
 def get_github_log(repo_name, job_id):
@@ -47,8 +46,8 @@ def ask_dify_ai(error_log, repo_name):
     }
     payload = {
         "inputs": {
-            "error_logs": error_log,
-            "project_name": repo_name
+            "error_logs": error_log
+            # "project_name": repo_name
         },
         "response_mode": "blocking",
         "user": "OpsPilot-System"
@@ -64,21 +63,59 @@ def ask_dify_ai(error_log, repo_name):
         return f"Dify 接口调用失败: {str(e)}"
 
 def push_notification(repo_name, diagnosis, job_url):
-    """推送消息到钉钉"""
-    content = (
-        f"### ⚠️ OpsPilot 故障预警\n\n"
-        f"**项目**: {repo_name}\n\n"
-        f"**AI 诊断建议**:\n{diagnosis}\n\n"
-        f"[点击查看流水线详情]({job_url})"
-    )
+    """
+    将 Dify 的诊断结果直接转发到飞书
+    使用 lark_md 标签来兼容 Markdown 格式
+    """
+    if not NOTIFY_WEBHOOK:
+        print("⚠️ 未配置 NOTIFY_WEBHOOK 环境变量")
+        return
+
+    # 构造飞书交互式卡片
     payload = {
-        "msgtype": "markdown",
-        "markdown": {"title": "流水线失败预警", "text": content}
+        "msg_type": "interactive",
+        "card": {
+            "header": {
+                "template": "orange", # 橙色标题，适合故障分析
+                "title": {
+                    "content": f"项目故障分析: {repo_name}",
+                    "tag": "plain_text"
+                }
+            },
+            "elements": [
+                {
+                    "tag": "div",
+                    "text": {
+                        "content": diagnosis, # 这里直接放 Dify 返回的 Markdown 内容
+                        "tag": "lark_md"      # 飞书会尝试按 Markdown 渲染
+                    }
+                },
+                {
+                    "tag": "hr" # 分割线
+                },
+                {
+                    "tag": "action",
+                    "actions": [
+                        {
+                            "tag": "button",
+                            "text": {"content": "查看 GitHub 流水线", "tag": "plain_text"},
+                            "url": job_url,
+                            "type": "primary"
+                        }
+                    ]
+                }
+            ]
+        }
     }
+
     try:
-        requests.post(NOTIFY_WEBHOOK, json=payload, timeout=10)
+        # 发送请求
+        res = requests.post(NOTIFY_WEBHOOK, json=payload, timeout=10)
+        print(f"飞书推送状态: {res.status_code}, 响应: {res.text}")
     except Exception as e:
-        print(f"推送通知失败: {str(e)}")
+        print(f"推送飞书时发生异常: {str(e)}")
+
+
 
 @app.route('/webhook', methods=['POST'])
 def github_webhook():
